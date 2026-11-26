@@ -1,0 +1,39 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip archives
+        run: |
+          for f in ./*.zip; do
+            unzip -o "$f"
+          done
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: sudo chmod -R a+rwX $ANDROID_HOME
+
+      - run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - run: gradle assembleDebug --no-daemon
+        working-directory: jelly_photo_android
+
+      - run: find jelly_photo_android -name "*.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jelly-photo-apk
+          path: jelly_photo_android/**/build/outputs/apk/**/*.apk
+          if-no-files-found: error
